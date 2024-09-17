@@ -7,7 +7,8 @@ import functions
 import struct
 import time
 import threading
-
+import tarfile
+import os
 
 class MUOVI():
     def __init__(self, **kwargs):
@@ -89,10 +90,22 @@ class MUOVI():
             self.socket_M.send(vector)
             print('invio', cont_rampe)
             time.sleep(1 / 16)
+    def Read_localfile(self):
+        # get the current working directory
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # data folder
+        data_dir = ['C:\\Users\\catec\\Desktop\\Simulazione_MUOVI\\FILE_MUOVI']
+
+        # Percorso del file tar
+        tar_file_path = os.path.join(current_dir, 'test Muovi tibiale.tar')
+        return data_dir, tar_file_path
+
 
     def main(self):
         comm = self.read_new_CB(self.socket_M.recv(1))
         comm = functions.integer_to_bytes(15)  # 15= 1111 test mode
+        # comm =
         self.handle_CB(comm)
 
     # function handling the control byte (function e non method perchè opera su un oggetto esterno alla classe: comando)
@@ -159,4 +172,6 @@ class MUOVI():
 # MAIN
 if __name__ == "__main__":
     MUOVI1 = MUOVI()
+    MUOVI2 = MUOVI()
+    MUOVI2.Read_localfile()
     # MUOVI1.main()
