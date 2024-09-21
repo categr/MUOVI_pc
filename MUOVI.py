@@ -104,8 +104,9 @@ class MUOVI():
 
     def main(self):
         comm = self.read_new_CB(self.socket_M.recv(1))
+        # or
         comm = functions.integer_to_bytes(15)  # 15= 1111 test mode
-        # comm =
+
         self.handle_CB(comm)
 
     # function handling the control byte (function e non method perchè opera su un oggetto esterno alla classe: comando)
