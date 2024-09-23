@@ -103,9 +103,11 @@ class MUOVI():
 
 
     def main(self):
-        comm = self.read_new_CB(self.socket_M.recv(1))
+        #comm = self.read_new_CB(self.socket_M.recv(1)) # leggo comando da socket
         # or
-        comm = functions.integer_to_bytes(15)  # 15= 1111 test mode
+        #comm = functions.integer_to_bytes(15)  # 15= 1111 test mode
+        # or
+        comm = local_file_functions.create_bin_command_xml( #creo comando da lettura file locale
 
         self.handle_CB(comm)
 
@@ -173,6 +175,4 @@ class MUOVI():
 # MAIN
 if __name__ == "__main__":
     MUOVI1 = MUOVI()
-    MUOVI2 = MUOVI()
-    MUOVI2.Read_localfile()
     # MUOVI1.main()
