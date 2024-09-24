@@ -44,6 +44,7 @@ class MUOVI():
         return command
 
     def Test_mode(self, EMG, bytes_in_sample, number_of_channels):
+        #buffer_size = 1368 #emg 1368/2 = 684 valori, eeg 1368/3 = 456 valori per ogni vettore inviato
         if EMG == 1:
             num_cells = 684  # len buffer/2 = num_celle, num_celle/n_channels = n_cols
             n_cols = int(num_cells / number_of_channels)
@@ -91,6 +92,46 @@ class MUOVI():
             self.socket_M.send(vector)
             print('invio', cont_rampe)
             time.sleep(1 / 16)
+
+    def send_sig_data(self, sig_file_path, bytes_in_sample, number_of_channels):
+        # Definisce la dimensione del buffer (1368 byte) e la lunghezza di ciascun campione
+        buffer_size = 1368
+
+        # Apri il file in modalità binaria
+        with open(sig_file_path, 'rb') as f:
+            while True:
+                # Leggi un blocco di dati dal file (1368 byte per ciclo)
+                data = f.read(buffer_size)
+
+                # Se non ci sono più dati nel file, interrompi il ciclo
+                if not data:
+                    break
+
+                # Inizializza il vettore che verrà inviato
+                vector = bytearray()
+
+                # Interpreta i dati letti e impacchettali in formato 2 byte (unsigned short)
+                for i in range(0, len(data), bytes_in_sample):
+                    # Legge il valore a 2 byte
+                    if bytes_in_sample == 2:
+                        value = struct.unpack('>H', data[i:i + bytes_in_sample])[0]
+                    else:
+                        raise ValueError("Solo valori a 2 byte sono supportati.")
+
+                    # Aggiungi il valore al vettore ripetendolo per il numero di canali
+                    for _ in range(number_of_channels):
+                        packed_value = struct.pack('>H', value)
+                        vector.extend(packed_value)
+
+                # Invia il vettore attraverso il socket
+                self.socket_M.send(vector)
+
+                # Aspetta un breve intervallo (1/16 di secondo) prima di inviare il prossimo blocco
+                time.sleep(1 / 16)
+
+                # Stampa per tenere traccia dell'invio
+                print(f'Inviato blocco di {len(vector)} byte')
+
     def Read_localfile(self):
         # get the current working directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -171,6 +212,8 @@ class MUOVI():
                 # 00 = Monopolar mode with preamp gain 8. 32 monopolar bioelectrical signals + 6
                 # accessory signals. Resolution is 286.1 nV and range +/-9.375 mV
                 print("32 ch + 6 accessories")
+                file_sig = 'C:\\Users\\catec\\PycharmProjects\\MUOVI_pc\\..\\extraction_pc\\20210324142445.sig'
+                self.send_sig_data(file_sig, bytes_in_sample, number_of_channels)
 
         else:
             self.socket_M.close()
