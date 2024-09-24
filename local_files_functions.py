@@ -41,18 +41,18 @@ file_xml = os.path.join(extraction_dir, f"{base_name}.xml")
 # Verifica se il file .xml esiste
 if not os.path.exists(file_xml):
     print("File .xml non trovato")
-
+#-----------------------------------------------------------------------------------------------------------------
 #function per leggere info file xml
 import xml.etree.ElementTree as ET
-def read_xml(file_xml):
-    tree = ET.parse(file_xml)
+def read_xml(file_xml_path):
+    tree = ET.parse(file_xml_path)
     root = tree.getroot()
     #print(root.attrib, root.tag)
     Device_name = root.get('Name')
     N_channels = root.get('DeviceTotalChannels')
     sample_frequency = root.get('SampleFrequency')
     ad_bits = root.get('ad_bits')
-    return sample_frequency, ad_bits
+    return int(sample_frequency), int(ad_bits)
 
 def create_bin_command_xml(sample_frequency, ad_bits):
     # Refer to the communication protocol for details about these variables:
@@ -90,7 +90,7 @@ def create_bin_command_xml(sample_frequency, ad_bits):
             "Could not set number_of_channels "
             "and/or and/or bytes_in_sample")
 
-    return (integer_to_bytes(command),
+    return (functions.integer_to_bytes(command),
             # command, #dà il comando in decimale
             number_of_channels,
             sample_frequency,

@@ -9,6 +9,7 @@ import time
 import threading
 import tarfile
 import os
+import local_files_functions
 
 class MUOVI():
     def __init__(self, **kwargs):
@@ -107,7 +108,11 @@ class MUOVI():
         # or
         #comm = functions.integer_to_bytes(15)  # 15= 1111 test mode
         # or
-        comm = local_file_functions.create_bin_command_xml( #creo comando da lettura file locale
+        #inserisco i path trovati con script local files functions
+        file_xml = 'C:\\Users\\catec\\PycharmProjects\\MUOVI_pc\\..\\extraction_pc\\20210324142445.xml'
+        file_sig = 'C:\\Users\\catec\\PycharmProjects\\MUOVI_pc\\..\\extraction_pc\\20210324142445.sig'
+        sample_frequency, ad_bits = local_files_functions.read_xml(file_xml)
+        comm, number_of_channels, sample_frequency, bytes_in_sample = local_files_functions.create_bin_command_xml(sample_frequency, ad_bits) # creo comando da lettura file locale
 
         self.handle_CB(comm)
 
@@ -165,7 +170,7 @@ class MUOVI():
                 number_of_channels = 38  # oppure 16? NumChanVsMode = np.array([38,22,38,38])
                 # 00 = Monopolar mode with preamp gain 8. 32 monopolar bioelectrical signals + 6
                 # accessory signals. Resolution is 286.1 nV and range +/-9.375 mV
-                print("32 ch")
+                print("32 ch + 6 accessories")
 
         else:
             self.socket_M.close()
