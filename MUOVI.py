@@ -93,9 +93,16 @@ class MUOVI():
             print('invio', cont_rampe)
             time.sleep(1 / 16)
 
-    def send_sig_data(self, sig_file_path, bytes_in_sample, number_of_channels):
-        # Definisce la dimensione del buffer (1368 byte) e la lunghezza di ciascun campione
+    def send_sig_data(self, sig_file_path, bytes_in_sample, sample_frequency, number_of_channels):
+        # Definisce la dimensione del buffer (1368 byte)
         buffer_size = 1368
+
+        # Calcola quanti campioni ci sono in ogni blocco di dati
+        samples_per_block = buffer_size // (bytes_in_sample * number_of_channels)
+
+        # Calcola il tempo che deve passare tra l'invio di ciascun blocco
+        # Tempo per campione (1 / frequenza di campionamento)*numero di campioni per blocco
+        time_per_block = samples_per_block / sample_frequency
 
         # Apri il file in modalità binaria
         with open(sig_file_path, 'rb') as f:
@@ -128,7 +135,9 @@ class MUOVI():
 
                 # Aspetta un breve intervallo (1/16 di secondo) prima di inviare il prossimo blocco
                 # TODO: da rivedere in base alla f samp
-                time.sleep(1 / 16)
+                #time.sleep(1 / 16)
+                # Rispetta il tempo di attesa per la frequenza di campionamento
+                time.sleep(time_per_block)
 
                 # Stampa per tenere traccia dell'invio
                 print(f'Inviato blocco di {len(vector)} byte')
@@ -214,7 +223,7 @@ class MUOVI():
                 # accessory signals. Resolution is 286.1 nV and range +/-9.375 mV
                 print("32 ch + 6 accessories")
                 file_sig = 'C:\\Users\\catec\\PycharmProjects\\MUOVI_pc\\..\\extraction_pc\\20210324142445.sig'
-                self.send_sig_data(file_sig, bytes_in_sample, number_of_channels)
+                self.send_sig_data(file_sig, bytes_in_sample, sample_frequency, number_of_channels)
 
         else:
             self.socket_M.close()
