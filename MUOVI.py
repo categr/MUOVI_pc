@@ -113,21 +113,21 @@ class MUOVI():
                 # Interpreta i dati letti e impacchettali in formato 2 byte (unsigned short)
                 for i in range(0, len(data), bytes_in_sample):
                     # Legge il valore a 2 byte
-                    # TO DO : fare il caso a 3 byte di EEG
+                    # TODO : fare il caso a 3 byte di EEG
                     if bytes_in_sample == 2:
                         value = struct.unpack('>H', data[i:i + bytes_in_sample])[0]
                     else:
                         raise ValueError("Solo valori a 2 byte sono supportati.")
 
-                    # Aggiungi il valore al vettore ripetendolo per il numero di canali
-                    for _ in range(number_of_channels):
-                        packed_value = struct.pack('>H', value)
-                        vector.extend(packed_value)
+
+                    packed_value = struct.pack('>H', value)
+                    vector.extend(packed_value)
 
                 # Invia il vettore attraverso il socket
                 self.socket_M.send(vector)
 
                 # Aspetta un breve intervallo (1/16 di secondo) prima di inviare il prossimo blocco
+                # TODO: da rivedere in base alla f samp
                 time.sleep(1 / 16)
 
                 # Stampa per tenere traccia dell'invio
