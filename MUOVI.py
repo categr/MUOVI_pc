@@ -113,6 +113,7 @@ class MUOVI():
                 # Interpreta i dati letti e impacchettali in formato 2 byte (unsigned short)
                 for i in range(0, len(data), bytes_in_sample):
                     # Legge il valore a 2 byte
+                    # TO DO : fare il caso a 3 byte di EEG
                     if bytes_in_sample == 2:
                         value = struct.unpack('>H', data[i:i + bytes_in_sample])[0]
                     else:
