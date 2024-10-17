@@ -122,7 +122,7 @@ class MUOVI():
                     # Legge il valore a 2 byte
                     # TODO : fare il caso a 3 byte di EEG
                     if bytes_in_sample == 2:
-                        value = struct.unpack('>H', data[i:i + bytes_in_sample])[0]
+                        value = struct.unpack('<H', data[i:i + bytes_in_sample])[0]
                     else:
                         raise ValueError("Solo valori a 2 byte sono supportati.")
 
