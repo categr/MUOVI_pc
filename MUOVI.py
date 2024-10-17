@@ -110,9 +110,10 @@ class MUOVI():
                 # Leggi un blocco di dati dal file (1368 byte per ciclo)
                 data = f.read(buffer_size)
 
-                # Se non ci sono più dati nel file, interrompi il ciclo
+                # Se non ci sono più dati nel file, riporta il puntatore all'inizio
                 if not data:
-                    break
+                    f.seek(0)
+                    continue
 
                 # Inizializza il vettore che verrà inviato
                 vector = bytearray()
@@ -122,20 +123,20 @@ class MUOVI():
                     # Legge il valore a 2 byte
                     # TODO : fare il caso a 3 byte di EEG
                     if bytes_in_sample == 2:
-                        value = struct.unpack('<H', data[i:i + bytes_in_sample])[0]
+                        value = struct.unpack('<H', data[i:i + bytes_in_sample])[0]  #< little endian, H:Unsigned short (2 bytes, 16 bits).
                     else:
                         raise ValueError("Solo valori a 2 byte sono supportati.")
 
 
-                    packed_value = struct.pack('>H', value)
+                    packed_value = struct.pack('>H',value)  #> big endian
                     vector.extend(packed_value)
 
                 # Invia il vettore attraverso il socket
                 self.socket_M.send(vector)
 
-                # Aspetta un breve intervallo (1/16 di secondo) prima di inviare il prossimo blocco
-                # TODO: da rivedere in base alla f samp
-                #time.sleep(1 / 16)
+                # Aspetta un breve intervallo (1/16 di secondo) prima di inviare il prossimo blocco #CAMBIATO
+                # time.sleep(1 / 16) #CAMBIATO con le due righe dopo
+
                 # Rispetta il tempo di attesa per la frequenza di campionamento
                 time.sleep(time_per_block)
 
@@ -155,7 +156,7 @@ class MUOVI():
 
 
     def main(self):
-        #comm = self.read_new_CB(self.socket_M.recv(1)) # leggo comando da socket
+        comm_otb = self.read_new_CB(self.socket_M.recv(1)) # leggo comando da socket
         # or
         #comm = functions.integer_to_bytes(15)  # 15= 1111 test mode
         # or
@@ -164,8 +165,12 @@ class MUOVI():
         file_sig = 'C:\\Users\\catec\\PycharmProjects\\MUOVI_pc\\..\\extraction_pc\\20210324142445.sig'
         sample_frequency, ad_bits = local_files_functions.read_xml(file_xml)
         comm, number_of_channels, sample_frequency, bytes_in_sample = local_files_functions.create_bin_command_xml(sample_frequency, ad_bits) # creo comando da lettura file locale
+        if comm == comm_otb:
+            self.handle_CB(comm)
+        else:
+            raise ValueError("Errore: Il setup del software non è coerente con i dati scelti. Cambiare il setup ")
+            # TODO: far apparire una finestra invece che l'errore nel Terminal
 
-        self.handle_CB(comm)
 
     # function handling the control byte (function e non method perchè opera su un oggetto esterno alla classe: comando)
     def handle_CB(self, comm):
