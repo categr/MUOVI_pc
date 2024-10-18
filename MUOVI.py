@@ -10,6 +10,7 @@ import threading
 import tarfile
 import os
 import local_files_functions
+import select
 
 class MUOVI():
     def __init__(self, **kwargs):
@@ -104,9 +105,12 @@ class MUOVI():
         # Tempo per campione (1 / frequenza di campionamento)*numero di campioni per blocco
         time_per_block = samples_per_block / sample_frequency
 
+        flag_sending = True  # Variabile di controllo per interrompere il ciclo
+
         # Apri il file in modalità binaria
         with open(sig_file_path, 'rb') as f:
             while True:
+
                 # Leggi un blocco di dati dal file (1368 byte per ciclo)
                 data = f.read(buffer_size)
 
@@ -142,6 +146,20 @@ class MUOVI():
 
                 # Stampa per tenere traccia dell'invio
                 print(f'Inviato blocco di {len(vector)} byte')
+
+                # Usa select per monitorare il socket di ricezione
+                readable, _, _ = select.select([self.socket_M], [], [], 0)
+
+                # Se il socket è pronto per essere letto ( quindi readable non è vuoto)
+                if readable:
+                    # Leggo il comando
+                    comm_otb = self.read_new_CB(self.socket_M.recv(1))
+                    # Esegui il callback passandogli il comando ricevuto
+                    flag_sending = self.handle_CB(comm_otb)
+
+                    if not flag_sending:
+                        print("Ricevuto comando di STOP. Interrompo l'invio dei dati.")
+                        break  # Esce dal ciclo while
 
     def Read_localfile(self):
         # get the current working directory
@@ -232,7 +250,8 @@ class MUOVI():
 
         else:
             self.socket_M.close()
-            print("STOP")
+            print("STOP, il socket è stato chiuso")
+            return False
 
 
 # MAIN
