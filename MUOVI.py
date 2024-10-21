@@ -162,16 +162,13 @@ class MUOVI():
                     if bytes_in_sample == 2:
                         value = struct.unpack('<H', data[i:i + bytes_in_sample])[0]  #< little endian, H:Unsigned short (2 bytes, 16 bits).
                         packed_value = struct.pack('>H',value)  #> big endian
-                    else:
-                        raise ValueError("Solo valori a 2 byte sono supportati.")
-
-                    if bytes_in_sample == 3:
+                    elif bytes_in_sample == 3:
                         byte_array = data[i:i + bytes_in_sample]
                         value = (byte_array[2] << 16) | (byte_array[1] << 8) | byte_array[0] #Little endian
                         #value = (byte_array[0] << 16) | (byte_array[1] << 8) | byte_array[2] #big endian
                         packed_value = functions.pack_uint24(value) #big endian
                     else:
-                        raise ValueError("Solo valori a 3 byte sono supportati.")
+                        raise ValueError("Solo valori a 2 o 3 byte sono supportati.")
 
                     vector.extend(packed_value)
 
