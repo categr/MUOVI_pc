@@ -158,15 +158,21 @@ class MUOVI():
 
                 # Interpreta i dati letti e impacchettali in formato 2 byte (unsigned short)
                 for i in range(0, len(data), bytes_in_sample):
-                    # Legge il valore a 2 byte
-                    # TODO : fare il caso a 3 byte di EEG
+
                     if bytes_in_sample == 2:
                         value = struct.unpack('<H', data[i:i + bytes_in_sample])[0]  #< little endian, H:Unsigned short (2 bytes, 16 bits).
+                        packed_value = struct.pack('>H',value)  #> big endian
                     else:
                         raise ValueError("Solo valori a 2 byte sono supportati.")
 
+                    if bytes_in_sample == 3:
+                        byte_array = data[i:i + bytes_in_sample]
+                        value = (byte_array[2] << 16) | (byte_array[1] << 8) | byte_array[0] #Little endian
+                        #value = (byte_array[0] << 16) | (byte_array[1] << 8) | byte_array[2] #big endian
+                        packed_value = functions.pack_uint24(value) #big endian
+                    else:
+                        raise ValueError("Solo valori a 3 byte sono supportati.")
 
-                    packed_value = struct.pack('>H',value)  #> big endian
                     vector.extend(packed_value)
 
                 # Invia il vettore attraverso il socket
