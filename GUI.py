@@ -4,6 +4,7 @@ from tkinter import filedialog, messagebox
 import os
 import tarfile
 import xml.etree.ElementTree as ET
+import MUOVI
 
 class GUI:
     def __init__(self, root):
@@ -67,17 +68,24 @@ class GUI:
                 return
 
             # Leggi le informazioni dal file .xml
-            sample_frequency, ad_bits = self.read_xml(file_xml)
+            device_name, sample_frequency, ad_bits = self.read_xml(file_xml)
 
             # Mostra le informazioni nella GUI
             info_text = f"File .sig: {files_sig[0]}\n"
+            info_text += f"Device: {device_name} \n"
             info_text += f"Frequenza di campionamento: {sample_frequency} Hz\n"
             info_text += f"AD bits: {ad_bits}"
             self.info_label.config(text=info_text)
+            # Forza l'aggiornamento dell'interfaccia grafica prima di creare il dispositivo
+            self.root.update()
+
+            # creazione istanza del device, MUOVI o altro tipo di device in base al nome letto dal file .xml
+            device = self.choose_device(device_name, sample_frequency)
+
 
         except Exception as e:
             # Mostra un messaggio di errore in caso di problemi
-            messagebox.showerror("Errore", f"Errore durante l'estrazione o la lettura del file: {str(e)}")
+            messagebox.showerror("Errore", f"Errore durante l'estrazione o la lettura del file: {str(e)} \n")
 
     def find_file_sig(self, folder):
         # Scansiona la cartella per trovare file con estensione .sig
@@ -92,9 +100,21 @@ class GUI:
         # Leggi le informazioni dal file XML
         tree = ET.parse(file_xml_path)
         root = tree.getroot()
+        device_name = root.get('Name')
         sample_frequency = root.get('SampleFrequency')
         ad_bits = root.get('ad_bits')
-        return int(sample_frequency), int(ad_bits)
+        return device_name, int(sample_frequency), int(ad_bits)
+
+    def choose_device(self, device_name, sample_frequency):
+
+        if device_name == "MUOVI":
+            # creo istanza dispositivo MUOVI
+            return MUOVI.MUOVI(sample_frequency)
+        elif device_name == "OTTANTAQUATTRO":
+            return 0 #OTTANTAQUATTRO(comm, number_of_channels, sample_frequency, bytes_in_sample)
+        else:
+            raise ValueError(f"Dispositivo {device_name} non supportato.")
+
 
 # Funzione principale per eseguire la GUI
 if __name__ == "__main__":

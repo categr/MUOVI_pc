@@ -1,23 +1,21 @@
 # -*- coding: utf-8 -*-
 
 import socket
-# import communication
-import numpy as np
 import functions
 import struct
 import time
-import threading
-import tarfile
-import os
-import local_files_functions
 import select
+from tkinter import messagebox
 
 class MUOVI():
-    def __init__(self, **kwargs):
-        # super().__init__(**kwargs)
+    def __init__(self, sample_frequency):
+
         self.ip_address = '127.0.0.1'  # loalhost
         self.port = 54321
         self.socket_M = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        self.sample_frequency = sample_frequency
+
 
         connection_accepted = False  # flag
         while (not connection_accepted):
@@ -28,10 +26,7 @@ class MUOVI():
                 pass
 
         self.main()
-        # Thread per la lettura dei comandi
-        # self.command_thread = threading.Thread(target=self.main)
-        # self.command_thread.daemon = True
-        # self.command_thread.start()
+
 
     def read_new_CB(self, command):
 
@@ -43,7 +38,46 @@ class MUOVI():
             raise ValueError("Command must contain 1 byte")
 
         return command
+    def create_bin_command_xml(self, sample_frequency):
+        # Refer to the communication protocol for details about these variables:
+        ProbeEN = 1  # 1 = Probe enabled, 0 = probe disabled (bit0)
+        if sample_frequency == 2000:
+            EMG = 1  # 1 = EMG, 0 = EEG (bit 3)
+            #assert ad_bits == 16, 'Incoerence between sample frequency and ad bits'
+            bytes_in_sample = 2
+        if sample_frequency == 500:
+            EMG = 0
+            #assert ad_bits == 24, 'Incoerence between sample frequency and ad bits'
+            bytes_in_sample = 3
 
+        Mode0 = 0  # [00 01 10 11] = [monop monop16 impCk Test]
+        Mode1 = 0
+        # Mode = 0       # 0 = 32Ch Monop, 1 = 16Ch Monop, 2 = 32Ch ImpCk, 3 = 32Ch Test (bit 1 e 2)
+        # control byte: 0 0 0 0 EMG Mode_bit2 Mode_bit1 ProbeEN
+
+        # Create the command to send to Muovi
+        command = 0
+        if ProbeEN == 1:
+            command = 0 + EMG * 8 + + Mode1 * 4 + Mode0 * 2 + 1  # conv in decimale (ProbeEN=1*2^0+ Mode*2^1)
+            if Mode0 == 0 and Mode1 == 1:
+                # number_of_channels = NumChanVsMode[Mode]
+                number_of_channels = 38
+            else:
+                number_of_channels = 38
+
+        if (
+                not number_of_channels or
+                not sample_frequency or
+                not bytes_in_sample):
+            raise Exception(
+                "Could not set number_of_channels "
+                "and/or and/or bytes_in_sample")
+
+        return (functions.integer_to_bytes(command),
+                # command, #dà il comando in decimale
+                number_of_channels,
+                sample_frequency,
+                bytes_in_sample)
     def Test_mode(self, EMG, bytes_in_sample, number_of_channels):
         #buffer_size = 1368 #emg 1368/2 = 684 valori, eeg 1368/3 = 456 valori per ogni vettore inviato
         if EMG == 1:
@@ -150,7 +184,7 @@ class MUOVI():
                 # Usa select per monitorare il socket di ricezione
                 readable, _, _ = select.select([self.socket_M], [], [], 0)
 
-                # Se il socket è pronto per essere letto ( quindi readable non è vuoto)
+                # Se il socket è pronto per essere letto ( quindi se readable non è vuoto)
                 if readable:
                     # Leggo il comando
                     comm_otb = self.read_new_CB(self.socket_M.recv(1))
@@ -161,33 +195,21 @@ class MUOVI():
                         print("Ricevuto comando di STOP. Interrompo l'invio dei dati.")
                         break  # Esce dal ciclo while
 
-    def Read_localfile(self):
-        # get the current working directory
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-
-        # data folder
-        data_dir = ['C:\\Users\\catec\\Desktop\\Simulazione_MUOVI\\FILE_MUOVI']
-
-        # Percorso del file tar
-        tar_file_path = os.path.join(current_dir, 'test Muovi tibiale.tar')
-        return data_dir, tar_file_path
-
 
     def main(self):
         comm_otb = self.read_new_CB(self.socket_M.recv(1)) # leggo comando da socket
+
+        # comm = functions.integer_to_bytes(15)  # 15= 1111 test mode
         # or
-        #comm = functions.integer_to_bytes(15)  # 15= 1111 test mode
-        # or
-        #inserisco i path trovati con script local files functions
-        file_xml = 'C:\\Users\\catec\\PycharmProjects\\MUOVI_pc\\..\\extraction_pc\\20210324142445.xml'
-        file_sig = 'C:\\Users\\catec\\PycharmProjects\\MUOVI_pc\\..\\extraction_pc\\20210324142445.sig'
-        sample_frequency, ad_bits = local_files_functions.read_xml(file_xml)
-        comm, number_of_channels, sample_frequency, bytes_in_sample = local_files_functions.create_bin_command_xml(sample_frequency, ad_bits) # creo comando da lettura file locale
+        comm, number_of_channels, sample_frequency, bytes_in_sample = self.create_bin_command_xml(self.sample_frequency) # creo comando da lettura file locale
         if comm == comm_otb:
             self.handle_CB(comm)
         else:
             raise ValueError("Errore: Il setup del software non è coerente con i dati scelti. Cambiare il setup ")
-            # TODO: far apparire una finestra invece che l'errore nel Terminal
+            # TODO: problema: si fondono le finestre di errore
+            # Mostra un messaggio di errore in una finestra di dialogo
+            messagebox.showerror("Errore di Setup","Il setup del software non è coerente con i dati scelti. Cambiare il setup.")
+
 
 
     # function handling the control byte (function e non method perchè opera su un oggetto esterno alla classe: comando)
@@ -254,7 +276,7 @@ class MUOVI():
             return False
 
 
-# MAIN
-if __name__ == "__main__":
-    MUOVI1 = MUOVI()
-    # MUOVI1.main()
+# MAIN, viene istanziato in GUI.py
+#if __name__ == "__main__":
+    # MUOVI1 = MUOVI()
+
